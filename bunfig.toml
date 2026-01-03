@@ -1,0 +1,4 @@
+minimumReleaseAge = "7d"
+
+[install]
+registry = "https://registry.npmjs.org"
