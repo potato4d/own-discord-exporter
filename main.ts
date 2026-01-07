@@ -125,7 +125,8 @@ async function writeMessages(cfg: Config, msgs: Message[]) {
   const byDate = Map.groupBy(msgs, (m) => localDate(new Date(m.createdTimestamp)));
 
   for (const [dt, batch] of byDate) {
-    const [first] = batch;
+    if (!batch.length) continue;
+    const first = batch[0]!;
     const path = join(cfg.outDir, `dt=${dt}`, `guild_id=${first.guildId ?? "dm"}`, `channel_id=${first.channelId}`, "messages.json");
     await writeJson(path, batch.map((m) => toRecord(m, cfg)));
   }
