@@ -1,13 +1,12 @@
 # Discord Message Exporter
 
-A lightweight Discord message exporter built with Bun and discord.js. Export messages from Discord channels within a specific date range, with support for privacy features like user ID hashing and content redaction.
+A lightweight Discord message exporter built with Bun and discord.js. Export messages from Discord channels within a specific date range, with support for privacy features like content redaction.
 
 ## Features
 
 - Export messages from any Discord text channel or thread
 - Specify custom date ranges for message retrieval
 - Privacy-focused options:
-  - Hash user IDs with a custom salt
   - Redact message content while preserving metadata
 - Organized output structure (by date, guild, and channel)
 - Preserves rich message data:
@@ -38,9 +37,6 @@ Create a `.env` file in the project root:
 DISCORD_BOT_TOKEN=your_bot_token_here
 # or
 DISCORD_TOKEN=your_bot_token_here
-
-# Optional: Salt for hashing user IDs (for privacy)
-HASH_SALT=your_random_salt_string
 ```
 
 ### Discord Bot Setup
@@ -84,9 +80,9 @@ bun run main.ts \
   --end=2026-01-31T23:59:59Z
 ```
 
-**Export with privacy features (hashed IDs and redacted content):**
+**Export with privacy features (redacted content):**
 ```bash
-HASH_SALT=my-secret-salt bun run main.ts \
+bun run main.ts \
   --channel=123456789012345678 \
   --start=2026-01-01T00:00:00Z \
   --end=2026-01-31T23:59:59Z \
@@ -118,7 +114,7 @@ Each message is stored as a JSON object with the following structure:
   "created_at": "2026-01-01T00:00:00.000Z",
   "edited_at": null,
   "author": {
-    "id": "hashed_or_plain_id",
+    "id": "1234567890",
     "username": "username",
     "discriminator": "0",
     "globalName": "Display Name",
@@ -143,14 +139,6 @@ Each message is stored as a JSON object with the following structure:
 ```
 
 ## Privacy Features
-
-### User ID Hashing
-
-When `HASH_SALT` is set, all user IDs are hashed using SHA-256:
-
-```bash
-HASH_SALT=my-secret-salt bun run main.ts --channel=... --start=... --end=...
-```
 
 ### Content Redaction
 
