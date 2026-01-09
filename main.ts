@@ -47,6 +47,14 @@ function parseDate(s: string): Date {
   return d;
 }
 
+function sanitizeChannelName(name: string): string {
+  return name
+    .replace(/[<>:"/\\|?*]/g, "-")
+    .replace(/\s+/g, "-")
+    .replace(/^\.+/, "")
+    .toLowerCase();
+}
+
 // ─────────────────────────────────────────────────────────────
 // Message serialization
 // ─────────────────────────────────────────────────────────────
@@ -118,16 +126,16 @@ async function writeJson(path: string, records: unknown[]) {
   await Bun.write(path, JSON.stringify([...existing, ...records], null, 2));
 }
 
-async function writeMessages(cfg: Config, msgs: Message[]) {
+async function writeMessages(cfg: Config, msgs: Message[], channelName: string) {
   if (!msgs.length) return;
   msgs.sort((a, b) => a.createdTimestamp - b.createdTimestamp);
 
   const byDate = Map.groupBy(msgs, (m) => localDate(new Date(m.createdTimestamp)));
+  const sanitizedName = sanitizeChannelName(channelName);
 
   for (const [dt, batch] of byDate) {
     if (!batch.length) continue;
-    const first = batch[0]!;
-    const path = join(cfg.outDir, `dt=${dt}`, `guild_id=${first.guildId ?? "dm"}`, `channel_id=${first.channelId}`, "messages.json");
+    const path = join(cfg.outDir, sanitizedName, dt, "messages.json");
     await writeJson(path, batch.map((m) => toRecord(m, cfg)));
   }
 }
@@ -146,6 +154,8 @@ async function backfill(cfg: Config, ch: TextBasedChannel) {
   let before: string | undefined;
   let total = 0;
 
+  const channelName = "name" in ch && ch.name ? ch.name : "dm";
+
   while (true) {
     const batch = await ch.messages.fetch({ limit: 100, before });
     if (!batch.size) break;
@@ -154,14 +164,14 @@ async function backfill(cfg: Config, ch: TextBasedChannel) {
     total += msgs.length;
 
     const inRange = msgs.filter((m) => m.createdTimestamp >= cfg.start.getTime() && m.createdTimestamp < cfg.end.getTime());
-    await writeMessages(cfg, inRange);
+    await writeMessages(cfg, inRange, channelName);
 
     const oldest = msgs.reduce((a, b) => (a.createdTimestamp < b.createdTimestamp ? a : b));
     if (oldest.createdTimestamp < cfg.start.getTime()) break;
     before = oldest.id;
   }
 
-  console.log(`[backfill] channel=${ch.id} total=${total}`);
+  console.log(`[backfill] channel=${ch.id} name=${channelName} total=${total}`);
 }
 
 // ─────────────────────────────────────────────────────────────
